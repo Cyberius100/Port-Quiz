@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Port Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .quiz-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    .card h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px;
+    }
+    .button:hover {
+      background: #0056b3;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+    .modal.show {
+      display: block;
+    }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+    .overlay.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="quiz-grid" id="quiz-container"></div>
+  <div>
+    <button class="button" onclick="checkAnswers()">Перевірити відповіді</button>
+    <button class="button" onclick="resetQuiz()">Скинути результат</button>
+  </div>
+
+  <div id="results-modal" class="modal">
+    <h2>Результат</h2>
+    <div id="results"></div>
+    <button class="button" onclick="closeModal()">Закрити</button>
+  </div>
+  <div id="overlay" class="overlay" onclick="closeModal()"></div>
+
+  <script>
+    const ports = [
+      { description: "HTTP (веб-сайт)", port: 80 },
+      { description: "HTTPS (безпечні сайти)", port: 443 },
+      { description: "FTP (передача файлів)", port: 21 },
+      { description: "DNS (пошук доменів)", port: 53 },
+      { description: "IMAP (отримання пошти)", port: 143 },
+      { description: "SSH (віддалений доступ)", port: 22 },
+      { description: "SMTP (відправка пошти)", port: 25 },
+      { description: "SNMP (керування мережею)", port: "161-162" },
+      { description: "Telnet (віддалений доступ)", port: 23 },
+      { description: "POP3 (завантаження пошти)", port: 110 },
+      { description: "DHCP (видача IP-адрес)", port: "67-68" },
+      { description: "SLP (пошук послуг)", port: 427 },
+      { description: "RDP (віддалений робочий стіл)", port: 3389 },
+      { description: "LDAP (каталоги користувачів)", port: 389 },
+      { description: "NetBIOS (обмін даними в локальній мережі)", port: "137-139" },
+    ];
+
+    const availablePorts = [
+      80, 443, 21, 53, 143, 22, 25, "161-162", 23, 110, "67-68", 427, 3389, 389, "137-139"
+    ];
+
+    const quizContainer = document.getElementById("quiz-container");
+
+    const generateOptions = (correctPort) => {
+      const incorrectPorts = availablePorts.filter(port => port !== correctPort);
+      const randomIncorrectPorts = incorrectPorts
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      const options = [correctPort, ...randomIncorrectPorts];
+      options.sort(() => Math.random() - 0.5);
+      options.unshift(""); // Ensure "Виберіть щось" is always the first option
+      return options;
+    };
+
+    ports.forEach((port, index) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const title = document.createElement("h3");
+      title.textContent = port.description;
+
+      const select = document.createElement("select");
+      select.id = `answer-${index}`;
+
+      const options = generateOptions(port.port);
+      options.forEach(option => {
+        const opt = document.createElement("option");
+        opt.value = option;
+        opt.textContent = option || "Виберіть щось";
+        select.appendChild(opt);
+      });
+
+      card.appendChild(title);
+      card.appendChild(select);
+      quizContainer.appendChild(card);
+    });
+
+    function checkAnswers() {
+      const resultsContainer = document.getElementById("results");
+      resultsContainer.innerHTML = "";
+
+      ports.forEach((port, index) => {
+        const userAnswer = document.getElementById(`answer-${index}`).value;
+        const resultDiv = document.createElement("div");
+
+        if (userAnswer == port.port) {
+          resultDiv.textContent = `${port.description}: Вірно!`;
+          resultDiv.style.color = "green";
+        } else if (!userAnswer) {
+          resultDiv.textContent = `${port.description}: Нічого не вибрано.`;
+          resultDiv.style.color = "orange";
+        } else {
+          resultDiv.textContent = `${port.description}: прикра помилка (а треба було: ${port.port})`;
+          resultDiv.style.color = "red";
+        }
+
+        resultsContainer.appendChild(resultDiv);
+      });
+
+      openModal();
+    }
+
+    function resetQuiz() {
+      const resultsContainer = document.getElementById("results");
+      resultsContainer.innerHTML = "";
+      ports.forEach((port, index) => {
+        const select = document.getElementById(`answer-${index}`);
+        select.selectedIndex = 0;
+      });
+    }
+
+    function openModal() {
+      document.getElementById("results-modal").classList.add("show");
+      document.getElementById("overlay").classList.add("show");
+    }
+
+    function closeModal() {
+      document.getElementById("results-modal").classList.remove("show");
+      document.getElementById("overlay").classList.remove("show");
+    }
+  </script>
+
+</body>
+</html>
